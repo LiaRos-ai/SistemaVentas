@@ -4,6 +4,51 @@ Sistema de gestión de ventas desarrollado en **.NET 10** con una arquitectura e
 
 ---
 
+## 📌 Cambios recientes (para revisión)
+A continuación se describen los cambios implementados que deben ser revisados por el equipo:
+
+- Capa de Lógica de Negocio
+  - Se agregó la capa de negocio para centralizar reglas y procesos que antes residían parcialmente en la UI o los repositorios.
+  - Responsabilidades: orquestar llamadas a repositorios, aplicar validaciones de negocio, manejar transacciones y preparar DTOs para la UI.
+
+- Interfaces de servicios definidas
+  - Se definieron interfaces para los servicios principales (ej.: `IUsuarioService`, `IClienteService`, `IProductoService`, `IVentaService`).
+  - Objetivo: desacoplar la UI y los controladores de la implementación concreta y facilitar pruebas unitarias y mocking.
+
+- DTOs creados y utilizados
+  - Se introdujeron DTOs para separar las entidades del modelo de datos de los objetos consumidos por la UI y las APIs internas.
+  - Ejemplos: `ClienteDto`, `ProductoDto`, `VentaDto`, `DetalleVentaDto`, `UsuarioDto`.
+  - Los DTOs contienen sólo la información necesaria para la presentación y evitan exponer lógica o campos sensibles.
+
+- Validaciones de negocio implementadas
+  - Validaciones centrales movidas a la capa de negocio (p. ej. duplicados, verificación de stock, validación de precios, cliente activo, permisos de usuario).
+  - Errores de validación devuelven mensajes claros y consistentes para la UI.
+
+- Transacciones funcionando correctamente
+  - Operaciones compuestas (por ejemplo: creación de una venta + decremento de stock) se ejecutan dentro de una transacción atómica.
+  - En caso de error, la transacción se revierte para mantener la integridad de los datos.
+  - La coordinación puede residir en `VentaService` o en el repositorio específico que soporte transacciones.
+
+- StatusBar informativo (usuario, fecha, hora)
+  - La barra de estado en `FormPrincipal` muestra el usuario autenticado, la fecha y la hora actual.
+  - Se actualiza en tiempo real (formato: `Usuario: <nombre> | Fecha: YYYY-MM-DD | Hora: HH:MM:SS`) y refresca automáticamente cada segundo/minuto según configuración.
+
+¿Dónde revisar los cambios?
+- `Negocio/` - implementación de servicios, validaciones y orquestación
+- `Negocio/Interfaces/` - contratos de servicios (interfaces)
+- `DTOs/` o `Negocio/DTOs/` - definiciones de objetos de transferencia
+- `DAL/Repositories/` - transacciones y operaciones de bajo nivel (p. ej. `VentaRepository`)
+- `UI/FormPrincipal.cs` - StatusBar y mecanismos de refresco
+- Archivos de tests (si existen) para validar reglas y transacciones
+
+Recomendación para la revisión:
+1. Revisar las interfaces en `Negocio/Interfaces/` y la implementación en `Negocio/Services/`.
+2. Verificar las validaciones unitarias y/o manualmente reproducir escenarios (venta con stock insuficiente, cliente inactivo, datos duplicados).
+3. Ejecutar una venta de prueba y corroborar que la base de datos queda consistente en error y en éxito.
+4. Abrir la UI y confirmar que la `StatusBar` muestra usuario, fecha y hora correctamente.
+
+---
+
 ## 📁 Estructura del Proyecto
 
 ```
@@ -28,11 +73,18 @@ SistemaVentas/
 │       └── CategoriaRepository.cs   # CRUD de categorías
 │
 ├── 📂 Negocio/                      # Business Logic Layer
+│   ├── Interfaces/                  # Contratos de servicios (IClienteService, ...)
+│   ├── Services/                    # Implementaciones de servicios
 │   └── Extensions/
 │       ├── StringExtensions.cs      # Métodos de extensión para string
 │       ├── ProductExtensions.cs     # Lógica de negocio para productos
 │       ├── ClienteExtensions.cs     # Lógica de negocio para clientes
 │       └── VentaExtensions.cs       # Lógica de negocio para ventas
+│
+├── 📂 DTOs/                         # Objetos de transferencia
+│   ├── ClienteDto.cs
+│   ├── ProductoDto.cs
+│   └── VentaDto.cs
 │
 ├── 📂 ConsoleTest/                  # Aplicación de consola de prueba
 │   ├── Program.cs                   # Punto de entrada y menú interactivo
@@ -89,6 +141,7 @@ SistemaVentas/
 ### 1️⃣ **Configuración de Base de Datos**
 
 #### Opción A: LocalDB (Windows)
+
 ```
 <!-- ConsoleTest\App.config -->
 <add name="SistemaVentas"
@@ -97,6 +150,7 @@ SistemaVentas/
 ```
 
 #### Opción B: SQL Server con Usuario/Contraseña
+
 ```
 <add name="SistemaVentas"
      connectionString="Data Source=localhost;Initial Catalog=SistemaVentas;User ID=sa;Password=tu_contraseña;TrustServerCertificate=True;"
@@ -104,6 +158,7 @@ SistemaVentas/
 ```
 
 #### Opción C: Servidor Remoto
+
 ```
 <add name="SistemaVentas"
      connectionString="Data Source=192.168.1.100;Initial Catalog=SistemaVentas;Integrated Security=True;TrustServerCertificate=True;"
@@ -196,17 +251,42 @@ CREATE TABLE DetallesVenta (
 dotnet build
 ```
 
-### 4️⃣ **Ejecutar la Aplicación**
+### 4️⃣ **Ejecutar la Aplicación - OPCIÓN 1: Interfaz Gráfica (Recomendado)**
 
 ```bash
-# En Visual Studio: F5 o Ctrl + F5
-# O en consola:
+# Directamente desde Visual Studio: F5 o Ctrl + F5
+# O desde consola:
+dotnet run --project SistemaVentas.csproj
+```
+
+**Verá el menú de selección de formularios:**
+
+```
+╔════════════════════════════════════════════╗
+║     SISTEMA DE VENTAS - DEMO DE UI        ║
+╚════════════════════════════════════════════╝
+
+Seleccione el formulario a visualizar:
+
+  1. Formulario Principal (MDI)
+  2. Formulario de Categorías
+  3. Formulario de Productos
+  4. Formulario de Clientes
+  5. Formulario de Usuarios
+  6. Formulario de Ventas
+  0. Volver a menú principal
+```
+
+**Seleccione cualquier opción para ver los datos en tiempo real desde la BD.**
+
+### 5️⃣ **Ejecutar la Aplicación - OPCIÓN 2: Consola Interactiva (Legacy)**
+
+```bash
+# Si desea usar la consola interactiva anterior:
 dotnet run --project ConsoleTest
 ```
 
-### 5️⃣ **Menú Principal**
-
-Al ejecutarse la consola, verá:
+**Verá el menú de consola:**
 
 ```
 ╔════════════════════════════════════════════════╗
@@ -228,7 +308,146 @@ Al ejecutarse la consola, verá:
 
 ---
 
-## 📚 Capa de Datos (DAL)
+## 🎨 Interfaz Gráfica (UI)
+
+### ✨ Formularios WinForms con Datos en Tiempo Real
+
+A partir de la versión 1.1, la aplicación incluye una interfaz gráfica completa con formularios que cargan datos directamente desde la base de datos:
+
+#### **FormPrincipal.cs** - Ventana MDI Principal
+- Menú principal con acceso a todos los módulos
+- Barra de herramientas con acciones rápidas
+- Barra de estado con información del usuario
+- Integración con la capa de negocio
+
+#### **FormCategorias.cs** - Gestión de Categorías
+- 📋 **DataGridView** que lista todas las categorías activas
+- 🔘 Botones: **Nuevo**, **Editar**, **Eliminar**, **Recargar**
+- 📊 Información total en pie de página
+- 🎨 Panel de título con fondo azul personalizado
+
+#### **FormProductos.cs** - Gestión de Productos
+- 📋 **DataGridView** con lista completa de productos
+- 🔍 **Búsqueda en tiempo real** por nombre
+- 💰 **Formato de moneda** automático para precios
+- 📊 Información dinámica de registros totales
+- 📐 Columnas redimensionables: ID, Código, Nombre, Precio, Stock
+
+#### **FormClientes.cs** - Gestión de Clientes
+- 👤 **Lista completa de clientes activos**
+- 📊 Muestra: ID, Nombres, Apellidos, Documento, Teléfono, Email
+- 🔘 Botones de acción: Nuevo, Editar, Eliminar, Recargar
+- 🎨 Panel de título con fondo verde personalizado
+
+#### **FormUsuarios.cs** - Gestión de Usuarios
+- 👨‍💼 **Listado de usuarios del sistema**
+- 📋 Columnas: ID, Nombres, Apellidos, NombreUsuario, Email, EsAdministrador
+- 🔄 Botón Recargar para actualizar en tiempo real
+- 🎨 Panel de título con fondo púrpura personalizado
+
+#### **FormVenta.cs** - Gestión de Ventas
+- 📈 **Listado completo de ventas**
+- 🔍 **Filtro por estado**: Todos, Pendiente, Completada, Anulada
+- 💵 **Formato de moneda** en columna Total
+- 📊 Información de ventas: NumeroVenta, FechaVenta, ClienteId, Total, Estado
+- 🎨 Panel de título con fondo naranja personalizado
+
+### 🎯 Características de UI
+- ✅ **Temas personalizados** por formulario con colores distintos
+- ✅ **DataGridView read-only** para seguridad de datos
+- ✅ **Botones de recarga** para actualizar datos en tiempo real
+- ✅ **Paneles organizados** por secciones (título, herramientas, datos, pie)
+- ✅ **Formateo automático** de datos (moneda, fechas, enumeraciones)
+- ✅ **Centrado en pantalla** de todos los formularios
+- ✅ **Integración con ThemeHelper** para consistencia visual
+
+---
+
+## 🗄️ Repositorios DAL Ampliados
+
+### `ClienteRepository.cs` ✨ NUEVO
+Operaciones CRUD completas para clientes:
+```csharp
+// Métodos principales
+List<Cliente> ObtenerTodos()          // Lista todos los clientes activos
+Cliente ObtenerPorId(int id)          // Obtiene cliente por ID
+int Insertar(Cliente cliente)         // Inserta nuevo cliente
+bool Actualizar(Cliente cliente)      // Actualiza datos del cliente
+bool Eliminar(int id)                 // Desactiva cliente (eliminación lógica)
+List<Cliente> BuscarPorNombre(string nombre)  // Busca por nombre o apellido
+```
+
+Propiedades mapeadas: Id, TipoDocumento, NumeroDocumento, Nombres, Apellidos, Dirección, Teléfono, Email, Activo, FechaRegistro
+
+### `UsuarioRepository.cs` ✨ NUEVO
+Operaciones CRUD completas para usuarios:
+```csharp
+// Métodos principales
+List<Usuario> ObtenerTodos()          // Lista todos los usuarios activos
+Usuario ObtenerPorId(int id)          // Obtiene usuario por ID
+Usuario ObtenerPorNombreUsuario(string nombre)  // Búsqueda por nombre usuario
+int Insertar(Usuario usuario)         // Inserta nuevo usuario
+bool Actualizar(Usuario usuario)      // Actualiza datos del usuario
+bool Eliminar(int id)                 // Desactiva usuario (eliminación lógica)
+```
+
+Propiedades mapeadas: Id, NombreUsuario, Clave, Nombres, Apellidos, Email, EsAdministrador, Activo, FechaRegistro
+
+### `VentaRepository.cs` ✨ NUEVO
+Operaciones CRUD completas para ventas:
+```csharp
+// Métodos principales
+List<Venta> ObtenerTodas()            // Lista todas las ventas
+Venta ObtenerPorId(int id)            // Obtiene venta por ID
+int Insertar(Venta venta)             // Inserta nueva venta
+bool Actualizar(Venta venta)          // Actualiza datos de venta
+bool Eliminar(int id)                 // Elimina venta
+List<Venta> ObtenerPorEstado(EstadoVenta estado)  // Filtra por estado
+```
+
+Propiedades mapeadas: Id, NumeroVenta, ClienteId, UsuarioId, FechaVenta, SubTotal, Impuesto, Total, Estado
+
+---
+
+## 🚀 Nuevo Menú de UI - Punto de Entrada
+
+El `Program.cs` ha sido actualizado para mostrar un **menú interactivo de demostración de UI**:
+
+```
+╔════════════════════════════════════════════╗
+║     SISTEMA DE VENTAS - DEMO DE UI        ║
+╚════════════════════════════════════════════╝
+
+Seleccione el formulario a visualizar:
+
+  1. Formulario Principal (MDI)
+  2. Formulario de Categorías
+  3. Formulario de Productos
+  4. Formulario de Clientes
+  5. Formulario de Usuarios
+  6. Formulario de Ventas
+  0. Volver a menú principal
+```
+
+Cada opción abre el formulario correspondiente **con datos cargados en tiempo real desde la base de datos**.
+
+---
+
+## 📊 Flujo de Datos
+
+```
+UI (WinForms)
+    ↓
+Formularios (FormXXX.cs)
+    ↓
+Repositorios (XXXRepository.cs)
+    ↓
+BaseRepository (Conexión a BD)
+    ↓
+SQL Server (BD SistemaVentas)
+```
+
+---
 
 ### `DatabaseConfig.cs`
 Gestiona la conexión a SQL Server:
@@ -281,48 +500,3 @@ texto.EscaparComillas();             // Escapa caracteres SQL
 ```
 
 ---
-
-## 🧪 Pruebas Incluidas
-
-En `Program.cs` encontrará funciones de demostración:
-
-- **ProbarConexion()**: Verifica conexión a DB
-- **ListarProductos()**: Muestra todos los productos
-- **BuscarProducto()**: Búsqueda por nombre con filtros
-- **ProductosBajoStock()**: Alerta de bajo inventario
-- **DemostrarExtensionMethods()**: Prueba lógica de negocio
-
----
-
-## 🔒 Seguridad
-
-- ✅ Conexión con `TrustServerCertificate=True` para certificados auto-firmados
-- ✅ Autenticación integrada de Windows cuando es posible
-- ✅ Parámetros SQL seguros (sin concatenación de strings)
-- ⚠️ Guarde contraseñas en `App.config` en entorno de producción (considere Azure Key Vault)
-
----
-
-## 📋 Notas Adicionales
-
-- La aplicación prueba la conexión antes de iniciar
-- Los productos tienen control de stock mínimo
-- Cada categoría puede tener múltiples productos
-- Las ventas registran fecha, cliente y usuario
-- Estados de venta: `Pendiente (1)`, `Completada (2)`, `Cancelada (3)`
-
----
-
-## Soporte
-
-Para resolver problemas:
-
-1. **Error de conexión**: Verifique `App.config` y la base de datos
-2. **Tablas no existen**: Ejecute el script SQL incluido
-3. **Permisos**: Asegúrese de tener acceso a SQL Server
-
----
-
-**Versión**: 1.0  
-**Última actualización**: enero 2026  
-**Desarrollado con**: .NET 10, C#, SQL Server

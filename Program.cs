@@ -5,17 +5,36 @@
 
 using System;
 using System.Collections.Generic;
+using System.Windows.Forms;
 using SistemaVentas.Entidades;
 using SistemaVentas.DAL.Repositories;
 using SistemaVentas.DAL.Conexion;
 using SistemaVentas.Negocio.Extensions;
+using SistemaVentas.UI;
 
 namespace SistemaVentas.ConsoleTest
 {
     class Program
     {
+        [STAThread]
         static void Main(string[] args)
         {
+            // Intentar mostrar la UI sin verificar conexión a BD
+            try
+            {
+                Application.EnableVisualStyles();
+                Application.SetCompatibleTextRenderingDefault(false);
+                
+                // Mostrar menú de demostración
+                MostrarMenuUI();
+                return;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al abrir interfaz gráfica: {ex.Message}");
+            }
+
+            // Si falla la UI, continuar con el programa original de consola
             Console.Title = "Sistema de Ventas - Demo";
 
             // Verificar conexión antes de comenzar
@@ -492,6 +511,141 @@ namespace SistemaVentas.ConsoleTest
             Console.Clear();
             // Usar el nuevo método de diagnóstico detallado
             Console.WriteLine(DatabaseConfig.ObtenerDiagnosticoConexion());
+        }
+
+        // Método para mostrar menú de UI
+        static void MostrarMenuUI()
+        {
+            while (true)
+            {
+                Console.Clear();
+                Console.WriteLine("╔════════════════════════════════════════╗");
+                Console.WriteLine("║     SISTEMA DE VENTAS - DEMO DE UI     ║");
+                Console.WriteLine("╚════════════════════════════════════════╝\n");
+                Console.WriteLine("Seleccione el formulario a visualizar:\n");
+                Console.WriteLine("  1. Formulario Principal (MDI)");
+                Console.WriteLine("  2. Formulario de Categorías");
+                Console.WriteLine("  3. Formulario de Productos");
+                Console.WriteLine("  4. Formulario de Clientes");
+                Console.WriteLine("  5. Formulario de Usuarios");
+                Console.WriteLine("  6. Formulario de Ventas");
+                Console.WriteLine("  0. Volver a menú principal\n");
+                Console.Write("Opción: ");
+
+                string opcion = Console.ReadLine();
+                Console.Clear();
+
+                switch (opcion)
+                {
+                    case "1":
+                        AbrirFormPrincipal();
+                        break;
+                    case "2":
+                        AbrirFormCategorias();
+                        break;
+                    case "3":
+                        AbrirFormProductos();
+                        break;
+                    case "4":
+                        AbrirFormClientes();
+                        break;
+                    case "5":
+                        AbrirFormUsuarios();
+                        break;
+                    case "6":
+                        AbrirFormVenta();
+                        break;
+                    case "0":
+                        return;
+                    default:
+                        Console.WriteLine("Opción no válida. Intente nuevamente.");
+                        System.Threading.Thread.Sleep(1500);
+                        break;
+                }
+            }
+        }
+
+        static void AbrirFormPrincipal()
+        {
+            try
+            {
+                Application.Run(new FormPrincipal());
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al abrir FormPrincipal: {ex.Message}");
+                Console.ReadKey();
+            }
+        }
+
+        static void AbrirFormCategorias()
+        {
+            try
+            {
+                var form = new FormCategorias();
+                Application.Run(form);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al abrir FormCategorias: {ex.Message}");
+                Console.ReadKey();
+            }
+        }
+
+        static void AbrirFormProductos()
+        {
+            try
+            {
+                var form = new FormProductos();
+                Application.Run(form);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al abrir FormProductos: {ex.Message}");
+                Console.ReadKey();
+            }
+        }
+
+        static void AbrirFormClientes()
+        {
+            try
+            {
+                var form = new FormClientes();
+                Application.Run(form);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al abrir FormClientes: {ex.Message}");
+                Console.ReadKey();
+            }
+        }
+
+        static void AbrirFormUsuarios()
+        {
+            try
+            {
+                var form = new FormUsuarios();
+                Application.Run(form);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al abrir FormUsuarios: {ex.Message}");
+                Console.ReadKey();
+            }
+        }
+
+        static void AbrirFormVenta()
+        {
+            try
+            {
+                var form = new FormVenta();
+                Application.Run(form);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al abrir FormVenta: {ex.Message}");
+                Console.ReadKey();
+            }
         }
     }
 }
