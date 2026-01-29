@@ -4,6 +4,12 @@
 
 Se ha implementado un sistema de reportes completo para visualizar información de productos del sistema.
 
+FastResport
+   - Instalar mediante NuGet Package Manager
+     * Install-Package FastReport.OpenSource
+   - Mediante .NET CLI (cmd, powershell)
+     * dotnet add package FastReport.OpenSource
+
 ### Archivos Creados/Modificados:
 
 1. **`UI/Reportes/FormReporteProductos.cs`**
@@ -38,6 +44,11 @@ Se ha implementado un sistema de reportes completo para visualizar información 
    ```
 
 2. **Navegar al reporte:**
+   - Abrir el proyecto en Visual Studio
+   - Presiona F5 o Debug > Start Debugging
+   - Opcion 1 Formulario Principal
+   
+4. Se abre el formulario de reporte
    - En el menú principal, ir a: **Reportes > Ventas por Período**
    - Se abrirá una nueva ventana MDI con el formulario de reporte
 
