@@ -165,14 +165,39 @@ namespace SistemaVentas.UI
 
         private void ventasPorPeriodoToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            MessageBox.Show("Reporte de Ventas por Período\n(Por implementar)",
-                "Reportes", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            // Mostrar el reporte de productos
+            AbrirFormularioReporte();
         }
 
         private void productosConStockBajoToolStripMenuItem_Click(object sender, EventArgs e)
         {
             MessageBox.Show("Reporte de Productos con Stock Bajo\n(Por implementar)",
                 "Reportes", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void AbrirFormularioReporte()
+        {
+            try
+            {
+                // Verificar si ya existe una instancia abierta del formulario
+                Form? formularioExistente = this.MdiChildren.FirstOrDefault(f => f.GetType().Name == "FormReporteProductos");
+                
+                if (formularioExistente != null)
+                {
+                    formularioExistente.Activate();
+                    return;
+                }
+
+                // Crear e instanciar el formulario de reporte
+                var formReporte = new SistemaVentas.UI.Reportes.FormReporteProductos();
+                formReporte.MdiParent = this;
+                formReporte.Show();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error al abrir el reporte: {ex.Message}",
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         #endregion

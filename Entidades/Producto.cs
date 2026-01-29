@@ -42,6 +42,9 @@ namespace SistemaVentas.Entidades
         public virtual ICollection<DetalleVenta> DetallesVenta { get; set; }
             = new List<DetalleVenta>();
 
+        // Nombre de la categoría (rellenado por los repositorios cuando aplica)
+        public string? CategoriaNombre { get; set; }
+
         /// <summary>
         /// Actualiza el stock del producto
         /// </summary>

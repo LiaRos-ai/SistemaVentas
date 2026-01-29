@@ -4,6 +4,7 @@ using System.Windows.Forms;
 using SistemaVentas.UI.Helpers;
 using SistemaVentas.DAL.Repositories;
 using SistemaVentas.Entidades;
+using SistemaVentas.DAL.Conexion;
 
 namespace SistemaVentas.UI
 {
@@ -146,26 +147,52 @@ namespace SistemaVentas.UI
                 var repo = new ProductoRepository();
                 List<Producto> productos = repo.ObtenerTodos();
 
+                // Limpiar DataSource antes de asignar
+                dgvProductos.DataSource = null;
+                dgvProductos.Rows.Clear();
+
                 dgvProductos.DataSource = productos;
 
                 // Personalizar columnas
                 if (dgvProductos.Columns.Count > 0)
                 {
-                    dgvProductos.Columns["Id"].Width = 50;
-                    dgvProductos.Columns["Codigo"].Width = 100;
-                    dgvProductos.Columns["Nombre"].Width = 200;
-                    dgvProductos.Columns["PrecioVenta"].Width = 100;
-                    dgvProductos.Columns["Stock"].Width = 80;
-                    dgvProductos.Columns["PrecioVenta"].DefaultCellStyle.Format = "C2";
+                    PersonalizarColumna("Id", 50);
+                    PersonalizarColumna("Codigo", 100);
+                    PersonalizarColumna("Nombre", 200);
+                    PersonalizarColumna("PrecioVenta", 100, "C2");
+                    PersonalizarColumna("Stock", 80);
                 }
 
                 lblTotal.Text = $"Total de productos: {productos.Count}";
                 txtBuscar.Clear();
+
+                if (productos.Count == 0)
+                {
+                    string diag = DatabaseConfig.ObtenerDiagnosticoConexion();
+                    MessageBox.Show("No se encontraron productos. Revisar conexión y base de datos.\n\n" + diag,
+                        "Información", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Error al cargar productos: {ex.Message}", "Error", 
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void PersonalizarColumna(string nombreColumna, int ancho, string? formato = null)
+        {
+            foreach (DataGridViewColumn col in dgvProductos.Columns)
+            {
+                if (col.Name == nombreColumna)
+                {
+                    col.Width = ancho;
+                    if (!string.IsNullOrEmpty(formato))
+                    {
+                        col.DefaultCellStyle.Format = formato;
+                    }
+                    return;
+                }
             }
         }
 
@@ -182,8 +209,18 @@ namespace SistemaVentas.UI
                 var repo = new ProductoRepository();
                 List<Producto> productos = repo.BuscarPorNombre(txtBuscar.Text);
 
+                dgvProductos.DataSource = null;
+                dgvProductos.Rows.Clear();
+
                 dgvProductos.DataSource = productos;
                 lblTotal.Text = $"Productos encontrados: {productos.Count}";
+
+                if (productos.Count == 0)
+                {
+                    string diag = DatabaseConfig.ObtenerDiagnosticoConexion();
+                    MessageBox.Show("No se encontraron productos con ese nombre.\n\n" + diag,
+                        "Información", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
             }
             catch (Exception ex)
             {
@@ -193,3 +230,4 @@ namespace SistemaVentas.UI
         }
     }
 }
+
