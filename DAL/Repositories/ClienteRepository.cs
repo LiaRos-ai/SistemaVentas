@@ -81,7 +81,8 @@ namespace SistemaVentas.DAL.Repositories
                 conn.Open();
                 using (SqlCommand cmd = new SqlCommand(query, conn))
                 {
-                    cmd.Parameters.AddWithValue("@TipoDocumento", cliente.TipoDocumento.ToString());
+                    // Store TipoDocumento as integer in the database
+                    cmd.Parameters.AddWithValue("@TipoDocumento", (int)cliente.TipoDocumento);
                     cmd.Parameters.AddWithValue("@NumeroDocumento", cliente.NumeroDocumento ?? "");
                     cmd.Parameters.AddWithValue("@Nombres", cliente.Nombres ?? "");
                     cmd.Parameters.AddWithValue("@Apellidos", cliente.Apellidos ?? "");
@@ -114,7 +115,8 @@ namespace SistemaVentas.DAL.Repositories
                 using (SqlCommand cmd = new SqlCommand(query, conn))
                 {
                     cmd.Parameters.AddWithValue("@Id", cliente.Id);
-                    cmd.Parameters.AddWithValue("@TipoDocumento", cliente.TipoDocumento.ToString());
+                    // Use integer value for TipoDocumento
+                    cmd.Parameters.AddWithValue("@TipoDocumento", (int)cliente.TipoDocumento);
                     cmd.Parameters.AddWithValue("@NumeroDocumento", cliente.NumeroDocumento ?? "");
                     cmd.Parameters.AddWithValue("@Nombres", cliente.Nombres ?? "");
                     cmd.Parameters.AddWithValue("@Apellidos", cliente.Apellidos ?? "");
@@ -180,10 +182,33 @@ namespace SistemaVentas.DAL.Repositories
 
         private Cliente MapearCliente(SqlDataReader reader)
         {
+            // TipoDocumento puede almacenarse como INT o como texto en la base de datos.
+            // Intentar obtenerlo de forma segura comprobando el tipo de valor devuelto.
+            object tipoValor = reader.GetValue(1);
+            TipoDocumento tipoDocumento = TipoDocumento.DNI;
+
+            try
+            {
+                if (tipoValor is int || tipoValor is long)
+                {
+                    tipoDocumento = (TipoDocumento)Convert.ToInt32(tipoValor);
+                }
+                else if (tipoValor is string)
+                {
+                    // Si es string, intentar parsear por nombre
+                    tipoDocumento = (TipoDocumento)Enum.Parse(typeof(TipoDocumento), reader.GetString(1));
+                }
+            }
+            catch
+            {
+                // En caso de error, dejar el valor por defecto
+                tipoDocumento = TipoDocumento.DNI;
+            }
+
             return new Cliente
             {
                 Id = reader.GetInt32(0),
-                TipoDocumento = (TipoDocumento)Enum.Parse(typeof(TipoDocumento), reader.GetString(1)),
+                TipoDocumento = tipoDocumento,
                 NumeroDocumento = reader.IsDBNull(2) ? string.Empty : reader.GetString(2),
                 Nombres = reader.IsDBNull(3) ? string.Empty : reader.GetString(3),
                 Apellidos = reader.IsDBNull(4) ? string.Empty : reader.GetString(4),
@@ -196,3 +221,4 @@ namespace SistemaVentas.DAL.Repositories
         }
     }
 }
+

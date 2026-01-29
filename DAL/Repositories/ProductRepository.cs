@@ -21,7 +21,7 @@ namespace SistemaVentas.DAL.Repositories
                        p.StockMinimo, p.CategoriaId, c.Nombre as CategoriaNombre, 
                        p.Activo
                 FROM Productos p
-                INNER JOIN Categorias c ON p.CategoriaId = c.Id
+                LEFT JOIN Categorias c ON p.CategoriaId = c.Id
                 WHERE p.Activo = 1
                 ORDER BY p.Nombre";
 
@@ -51,7 +51,7 @@ namespace SistemaVentas.DAL.Repositories
                        p.StockMinimo, p.CategoriaId, c.Nombre as CategoriaNombre, 
                        p.Activo
                 FROM Productos p
-                INNER JOIN Categorias c ON p.CategoriaId = c.Id
+                LEFT JOIN Categorias c ON p.CategoriaId = c.Id
                 WHERE p.Id = @Id";
 
             using (SqlConnection conn = GetConnection())
@@ -154,7 +154,7 @@ namespace SistemaVentas.DAL.Repositories
                        p.StockMinimo, p.CategoriaId, c.Nombre as CategoriaNombre, 
                        p.Activo
                 FROM Productos p
-                INNER JOIN Categorias c ON p.CategoriaId = c.Id
+                LEFT JOIN Categorias c ON p.CategoriaId = c.Id
                 WHERE p.Activo = 1 AND p.Nombre LIKE @Nombre
                 ORDER BY p.Nombre";
 
@@ -201,7 +201,7 @@ namespace SistemaVentas.DAL.Repositories
 
         private Producto MapearProducto(SqlDataReader reader)
         {
-            return new Producto
+            var producto = new Producto
             {
                 Id = reader.GetInt32(reader.GetOrdinal("Id")),
                 Codigo = reader.GetString(reader.GetOrdinal("Codigo")),
@@ -216,6 +216,28 @@ namespace SistemaVentas.DAL.Repositories
                 CategoriaId = reader.GetInt32(reader.GetOrdinal("CategoriaId")),
                 Activo = reader.GetBoolean(reader.GetOrdinal("Activo"))
             };
+
+            // Si la columna CategoriaNombre existe y no es null, asignarla (prop opcional en entidad)
+            try
+            {
+                int idx = reader.GetOrdinal("CategoriaNombre");
+                if (!reader.IsDBNull(idx))
+                {
+                    var nombreCat = reader.GetString(idx);
+                    // Intentar asignar una propiedad opcional en Producto llamada CategoriaNombre si existe
+                    var prop = typeof(Producto).GetProperty("CategoriaNombre");
+                    if (prop != null && prop.CanWrite)
+                    {
+                        prop.SetValue(producto, nombreCat);
+                    }
+                }
+            }
+            catch (IndexOutOfRangeException)
+            {
+                // columna no presente - ignorar
+            }
+
+            return producto;
         }
 
         private void ConfigurarParametrosProducto(SqlCommand cmd, Producto producto)
